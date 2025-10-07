@@ -19,15 +19,8 @@
 
 <!-- Documentation and Development Badges -->
 [![Documentation](https://img.shields.io/badge/docs-sphinx-blue.svg)](docs/)
-[![DOI](https://img.shields.io/badge/DOI-pending-orange.svg)](#citations)
 [![BioPython](https://img.shields.io/badge/BioPython-1.78+-green.svg)](https://biopython.org/)
 [![pytest](https://img.shields.io/badge/pytest-tested-green.svg)](https://docs.pytest.org/)
-
-<!-- Research and Bioinformatics Badges -->
-[![Ancient DNA](https://img.shields.io/badge/research-ancient%20DNA-purple.svg)](#)
-[![Sanger Sequencing](https://img.shields.io/badge/sequencing-Sanger-blue.svg)](#)
-[![Damage Analysis](https://img.shields.io/badge/analysis-damage%20patterns-red.svg)](#)
-[![Haplogroup](https://img.shields.io/badge/genetics-haplogroup%20classification-green.svg)](#)
 
 A comprehensive pipeline for processing Sanger sequencing data from ancient DNA (aDNA) samples, with automatic damage pattern analysis, enhanced quality control, and diversity assessment for optimal haplogroup classification.
 
@@ -35,13 +28,13 @@ A comprehensive pipeline for processing Sanger sequencing data from ancient DNA 
 
 > [!WARNING]
 > **Windows Compatibility Notice**
-> 
+>
 > This pipeline is **not recommended for Windows environments** due to:
 >
 > - Path handling complexities with bioinformatics tools
 > - Shell script dependencies optimized for Unix-like systems
 > - Potential issues with external dependencies (MAFFT, alignment tools)
-> 
+>
 > **Recommended platforms:**
 >
 > - ✅ **Linux** (Ubuntu 20.04+, CentOS 7+)
@@ -67,24 +60,28 @@ A comprehensive pipeline for processing Sanger sequencing data from ancient DNA 
 The badges above provide quick information about project health and capabilities:
 
 ### 🔧 **Development Status**
+
 - **CI (Continuous Integration)**: ✅ All tests passing on Linux and macOS
 - **Code Coverage**: 📊 Current test coverage percentage  
 - **Code Style**: 🎨 Formatted with Black, linted with flake8
 - **Quality Gate**: ✅ All quality checks passing
 
 ### 🖥️ **Technical Information**
+
 - **Platform Support**: 🖥️ Linux and macOS only (see compatibility notice above)
 - **Python Version**: 🐍 Compatible with Python 3.8 through 3.12
 - **Dependencies**: 📦 BioPython 1.78+, tested with pytest
 - **License**: 📄 MIT License - free for academic and commercial use
 
 ### 📚 **Project Health**
+
 - **Maintenance**: 🔧 Actively maintained and developed
 - **Documentation**: 📚 Comprehensive docs with examples and API reference
 - **Issues**: 🐛 GitHub issue tracking for bugs and features
 - **Releases**: 🏷️ Tagged releases with changelog
 
 ### 🧬 **Research Domain**
+
 - **Ancient DNA Analysis**: Specialized for aDNA damage pattern detection
 - **Sanger Sequencing**: Optimized for Sanger sequencing data processing
 - **Damage Patterns**: Advanced algorithms for DNA damage analysis
