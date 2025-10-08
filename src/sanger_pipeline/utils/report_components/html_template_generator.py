@@ -101,7 +101,8 @@ class HTMLTemplateGenerator:
 
         # Combine everything
         safe_template = (
-            html_template.replace("{", "{{").replace("}", "}}")
+            html_template.replace("{", "{{")
+            .replace("}", "}}")
             .replace("{{tab_content}}", "{tab_content}")
             .replace("{{charts_javascript}}", "{charts_javascript}")
         )
@@ -724,19 +725,19 @@ class HTMLTemplateGenerator:
                 </div>
                 <div class="col-md-3">
                     <div class="stat-card text-center">
-                        <div class="stat-number">{len(stats.get('samples', {}))}</div>
+                        <div class="stat-number">{len(stats.get("samples", {}))}</div>
                         <div class="stat-label">Samples Processed</div>
                     </div>
                 </div>
                 <div class="col-md-3">
                     <div class="stat-card text-center">
-                        <div class="stat-number">{stats.get('damage_data', {}).get('files_analyzed', 0)}</div>
+                        <div class="stat-number">{stats.get("damage_data", {}).get("files_analyzed", 0)}</div>
                         <div class="stat-label">N Result Files</div>
                     </div>
                 </div>
                 <div class="col-md-3">
                     <div class="stat-card text-center">
-                        <div class="stat-number">{stats.get('hvs_combinations', {}).get('total_merged_files', 0)}</div>
+                        <div class="stat-number">{stats.get("hvs_combinations", {}).get("total_merged_files", 0)}</div>
                         <div class="stat-label">Merged Files</div>
                     </div>
                 </div>
@@ -749,23 +750,23 @@ class HTMLTemplateGenerator:
                         <table class="table">
                             <tr>
                                 <td><strong>Report Generated:</strong></td>
-                                <td>{self._format_report_date(stats.get('report_generated'))}</td>
+                                <td>{self._format_report_date(stats.get("report_generated"))}</td>
                             </tr>
                             <tr>
                                 <td><strong>Pipeline Version:</strong></td>
-                                <td>{stats.get('pipeline_version', 'Unknown')}</td>
+                                <td>{stats.get("pipeline_version", "Unknown")}</td>
                             </tr>
                             <tr>
                                 <td><strong>Output Directory:</strong></td>
-                                <td><code>{stats.get('output_directory', 'Unknown')}</code></td>
+                                <td><code>{stats.get("output_directory", "Unknown")}</code></td>
                             </tr>
                             <tr>
                                 <td><strong>Minimum Phred Score:</strong></td>
-                                <td>{stats.get('quality_settings', {}).get('min_phred_score', 'Unknown')}</td>
+                                <td>{stats.get("quality_settings", {}).get("min_phred_score", "Unknown")}</td>
                             </tr>
                             <tr>
                                 <td><strong>Minimum Sequence Length:</strong></td>
-                                <td>{stats.get('quality_settings', {}).get('min_sequence_length', 'Unknown')}</td>
+                                <td>{stats.get("quality_settings", {}).get("min_sequence_length", "Unknown")}</td>
                             </tr>
                         </table>
                     </div>
@@ -805,10 +806,10 @@ class HTMLTemplateGenerator:
                 <div class="col-md-6 mb-4">
                     <div class="stat-card">
                         <h4><i class="fas fa-folder"></i> {safe_dir_title}</h4>
-                        <p><strong>Files:</strong> {dir_data.get('file_count', 0)}</p>
-                        <p><strong>Size:</strong> {dir_data.get('total_size_mb', 0)} MB</p>
+                        <p><strong>Files:</strong> {dir_data.get("file_count", 0)}</p>
+                        <p><strong>Size:</strong> {dir_data.get("total_size_mb", 0)} MB</p>
                         <div class="mb-2"><strong>Types:</strong><br>{file_types_html}</div>
-                        <div><strong>Sample files:</strong> {self._render_file_list(dir_data.get('files', []))}</div>
+                        <div><strong>Sample files:</strong> {self._render_file_list(dir_data.get("files", []))}</div>
                     </div>
                 </div>
                 """
@@ -850,9 +851,9 @@ class HTMLTemplateGenerator:
             samples_rows += f"""
             <tr>
                 <td>{safe_name}</td>
-                <td>{len(sample_info.get('consensus_files', []))}</td>
-                <td>{len(sample_info.get('final_files', []))}</td>
-                <td>{len(sample_info.get('damage_files', []))}</td>
+                <td>{len(sample_info.get("consensus_files", []))}</td>
+                <td>{len(sample_info.get("final_files", []))}</td>
+                <td>{len(sample_info.get("damage_files", []))}</td>
                 <td>{hvs_regions}</td>
             </tr>
             """
@@ -910,7 +911,10 @@ class HTMLTemplateGenerator:
                 "Maximum N Percentage",
                 self._format_plain_percentage(summary.get("max_n_percentage")),
             ),
-            ("Total Valid Bases", self._format_number(summary.get("total_valid_bases"), 0)),
+            (
+                "Total Valid Bases",
+                self._format_number(summary.get("total_valid_bases"), 0),
+            ),
             (
                 "Average Valid Percentage",
                 self._format_plain_percentage(summary.get("average_valid_percentage")),
@@ -921,7 +925,7 @@ class HTMLTemplateGenerator:
             f"""
                 <tr>
                     <td>{html.escape(label)}</td>
-                    <td>{value if value not in (None, 'N/A') else 'N/A'}</td>
+                    <td>{value if value not in (None, "N/A") else "N/A"}</td>
                 </tr>
             """
             for label, value in summary_metrics
@@ -929,7 +933,9 @@ class HTMLTemplateGenerator:
         )
 
         if not summary_rows:
-            summary_table = '<div class="alert alert-info">No summary data available yet.</div>'
+            summary_table = (
+                '<div class="alert alert-info">No summary data available yet.</div>'
+            )
         else:
             summary_table = f"""
                 <table class="table table-striped">

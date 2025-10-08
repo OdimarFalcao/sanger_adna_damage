@@ -79,7 +79,9 @@ class StatisticsCollector:
                 stats[legacy_key] = directories_stats[legacy_key]
 
         # Capture configuration parameters used for the run (prefer effective metadata)
-        config_parameters = run_metadata.get("config_parameters", {}) if run_metadata else {}
+        config_parameters = (
+            run_metadata.get("config_parameters", {}) if run_metadata else {}
+        )
         config_source: Optional[Path] = None
 
         if config_parameters:
@@ -168,7 +170,10 @@ class StatisticsCollector:
             stats["individual_sample_plots"] = {}
 
         # Ensure damage data entries exist for downstream rendering
-        stats.setdefault("damage_data", {"files_analyzed": 0, "summary": {}, "individual_results": []})
+        stats.setdefault(
+            "damage_data",
+            {"files_analyzed": 0, "summary": {}, "individual_results": []},
+        )
 
         return stats
 

@@ -91,9 +91,7 @@ class SangerPipelineRefactored:
         if self.cli_min_quality is not None:
             self.min_quality = self.cli_min_quality
         else:
-            self.min_quality = quality_config.get(
-                "min_phred_score", self.min_quality
-            )
+            self.min_quality = quality_config.get("min_phred_score", self.min_quality)
 
         if self.cli_min_sequence_length is not None:
             self.min_sequence_length = self.cli_min_sequence_length

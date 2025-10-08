@@ -38,9 +38,7 @@ def pipeline():
 @click.option(
     "--config", "-c", type=click.Path(exists=True), help="Configuration file (YAML)"
 )
-@click.option(
-    "--min-quality", "-q", type=int, help="Minimum Phred quality score"
-)
+@click.option("--min-quality", "-q", type=int, help="Minimum Phred quality score")
 @click.option(
     "--min-sequence-length",
     "-l",
