@@ -37,7 +37,7 @@ PATTERNS = {
 }
 
 # Configuration file locations
-PROJECT_ROOT = Path(__file__).parent.parent.parent
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
 CONFIG_DIR = PROJECT_ROOT / "config"
 DEFAULT_CONFIG_FILE = CONFIG_DIR / "default_config.yaml"
 

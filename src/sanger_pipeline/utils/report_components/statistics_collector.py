@@ -10,7 +10,9 @@ import json
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any, Dict, List, Optional, Tuple
+
+import yaml
 import pandas as pd
 
 logger = logging.getLogger(__name__)
@@ -45,14 +47,63 @@ class StatisticsCollector:
             "output_directory": str(self.output_dir),
         }
 
-        # Analyze standard directories
-        for dir_name in ["input", "output", "consensus", "final"]:
-            dir_path = self.output_dir / dir_name
-            stats[dir_name] = self._analyze_directory(dir_path)
+        # Load run metadata if available (captures effective configuration and overrides)
+        run_metadata = self._try_read_json(self.output_dir / "run_metadata.json")
+        if run_metadata:
+            stats["run_metadata"] = run_metadata
+            stats["quality_settings"] = run_metadata.get("quality", {})
+            stats["cli_overrides"] = run_metadata.get("cli_overrides", {})
+
+        # Analyze pipeline directories (stored both collectively and for backward compatibility)
+        directories_to_analyze = {
+            "output": self.output_dir / "output",
+            "fasta": self.output_dir / "fasta",
+            "filtered": self.output_dir / "filtered",
+            "consensus": self.output_dir / "consensus",
+            "final": self.output_dir / "final",
+            "aligned": self.output_dir / "aligned",
+            "damage_analysis": self.output_dir / "damage_analysis",
+            "plots": self.output_dir / "plots",
+            "reports": self.output_dir / "reports",
+        }
+
+        directories_stats: Dict[str, Any] = {}
+        for key, path in directories_to_analyze.items():
+            directories_stats[key] = self._analyze_directory(path)
+
+        stats["directories"] = directories_stats
+
+        # Maintain legacy keys referenced elsewhere in the codebase
+        for legacy_key in ["input", "output", "consensus", "final"]:
+            if legacy_key in directories_stats:
+                stats[legacy_key] = directories_stats[legacy_key]
+
+        # Capture configuration parameters used for the run (prefer effective metadata)
+        config_parameters = run_metadata.get("config_parameters", {}) if run_metadata else {}
+        config_source: Optional[Path] = None
+
+        if config_parameters:
+            config_source = self.output_dir / "run_metadata.json"
+        else:
+            config_parameters, config_source = self._load_config_parameters()
+
+        stats["config_parameters"] = config_parameters
+        if config_source:
+            stats["config_source"] = str(config_source)
 
         # Analyze damage analysis results
         if (self.output_dir / "damage_analysis").exists():
-            stats["damage_analysis"] = self._analyze_damage_results()
+            damage_analysis = self._analyze_damage_results()
+            stats["damage_analysis"] = damage_analysis
+            stats["damage_data"] = damage_analysis.copy()
+        else:
+            empty_damage = {
+                "files_analyzed": 0,
+                "summary": {},
+                "individual_results": [],
+            }
+            stats["damage_analysis"] = empty_damage.copy()
+            stats["damage_data"] = empty_damage
 
         # Analyze HVS combinations
         if (self.output_dir / "final").exists():
@@ -71,14 +122,22 @@ class StatisticsCollector:
 
                 # Generate damage data summary
                 dashboard_data = stats["dashboard_data"]
+                damage_data_summary = stats.get(
+                    "damage_data",
+                    {"files_analyzed": 0, "summary": {}, "individual_results": []},
+                )
+
                 if dashboard_data.get("has_data"):
                     samples = dashboard_data.get("samples", [])
-                    stats["damage_data"] = {
-                        "files_analyzed": len(samples),
-                        "summary": dashboard_data.get("summary", {}),
-                    }
+                    damage_data_summary["files_analyzed"] = len(samples)
+                    damage_data_summary["summary"].update(
+                        dashboard_data.get("summary", {})
+                    )
                 else:
-                    stats["damage_data"] = {"files_analyzed": 0, "summary": {}}
+                    damage_data_summary.setdefault("files_analyzed", 0)
+                    damage_data_summary.setdefault("summary", {})
+
+                stats["damage_data"] = damage_data_summary
 
                 # Generate damage plots for embedding in report
                 stats["damage_plots"] = (
@@ -93,13 +152,23 @@ class StatisticsCollector:
                 )
             except Exception as e:
                 logger.warning(f"Error generating damage statistics: {e}")
-                stats["damage_data"] = {"files_analyzed": 0, "summary": {}}
+                stats["damage_data"] = {
+                    "files_analyzed": 0,
+                    "summary": {},
+                    "individual_results": [],
+                }
                 stats["damage_plots"] = {}
                 stats["individual_sample_plots"] = {}
         else:
-            stats["damage_data"] = {"files_analyzed": 0, "summary": {}}
+            stats.setdefault(
+                "damage_data",
+                {"files_analyzed": 0, "summary": {}, "individual_results": []},
+            )
             stats["damage_plots"] = {}
             stats["individual_sample_plots"] = {}
+
+        # Ensure damage data entries exist for downstream rendering
+        stats.setdefault("damage_data", {"files_analyzed": 0, "summary": {}, "individual_results": []})
 
         return stats
 
@@ -145,9 +214,13 @@ class StatisticsCollector:
         json_files = list(damage_dir.glob("*.json"))
 
         if not json_files:
-            return {"files_analyzed": 0, "summary": {}}
+            return {
+                "files_analyzed": 0,
+                "summary": {},
+                "individual_results": [],
+            }
 
-        damage_data = []
+        damage_data: List[Dict[str, Any]] = []
         for json_file in json_files:
             try:
                 with open(json_file, "r") as f:
@@ -170,6 +243,12 @@ class StatisticsCollector:
                             "n_percentage": damage_patterns.get(
                                 "sequence_quality", {}
                             ).get("n_percentage", 0),
+                            "n_content": damage_patterns.get("n_content", 0),
+                            "valid_bases": damage_patterns.get("valid_bases", 0),
+                            "total_bases": damage_patterns.get("total_bases", 0),
+                            "ambiguous_content": damage_patterns.get(
+                                "ambiguous_content", 0
+                            ),
                         }
                     )
             except Exception as e:
@@ -179,12 +258,13 @@ class StatisticsCollector:
         if damage_data:
             df = pd.DataFrame(damage_data)
             summary = {
-                "mean_damage_5_prime": df["damage_5_prime"].mean(),
-                "mean_damage_3_prime": df["damage_3_prime"].mean(),
-                "mean_overall_damage": df["overall_damage_rate"].mean(),
-                "mean_valid_percentage": df["valid_percentage"].mean(),
-                "samples_with_damage": len(df[df["overall_damage_rate"] > 0.1]),
-                "high_quality_samples": len(df[df["valid_percentage"] > 50]),
+                "total_n_bases": float(df["n_content"].sum()),
+                "average_n_percentage": float(df["n_percentage"].mean()),
+                "median_n_percentage": float(df["n_percentage"].median()),
+                "max_n_percentage": float(df["n_percentage"].max()),
+                "total_valid_bases": float(df["valid_bases"].sum()),
+                "average_valid_percentage": float(df["valid_percentage"].mean()),
+                "mean_overall_damage": float(df["overall_damage_rate"].mean()),
             }
         else:
             summary = {}
@@ -192,7 +272,7 @@ class StatisticsCollector:
         return {
             "files_analyzed": len(json_files),
             "summary": summary,
-            "individual_results": damage_data[:10],  # Limit for report
+            "individual_results": damage_data[:50],
         }
 
     def _analyze_hvs_combinations(self) -> Dict[str, Any]:
@@ -294,3 +374,74 @@ class StatisticsCollector:
             sample_data["hvs_regions"] = list(sample_data["hvs_regions"])
 
         return samples
+
+    def _load_config_parameters(self) -> Tuple[Dict[str, Any], Optional[Path]]:
+        """Locate and load pipeline configuration parameters for display."""
+
+        candidate_paths = [
+            self.output_dir / "config.yaml",
+            self.output_dir / "config.yml",
+            self.output_dir / "pipeline_config.yaml",
+            self.output_dir / "pipeline_config.yml",
+        ]
+
+        output_config_dir = self.output_dir / "config"
+        if output_config_dir.exists():
+            candidate_paths.extend(
+                output_config_dir / name
+                for name in [
+                    "config.yaml",
+                    "config.yml",
+                    "pipeline_config.yaml",
+                    "pipeline_config.yml",
+                    "default_config.yaml",
+                ]
+            )
+
+        for candidate in candidate_paths:
+            data = self._try_read_yaml(candidate)
+            if data is not None:
+                return data, candidate
+
+        # Fallback to repository default configuration
+        try:
+            repo_config_path = (
+                Path(__file__).resolve().parents[4] / "config" / "default_config.yaml"
+            )
+        except IndexError:
+            repo_config_path = None
+
+        if repo_config_path and repo_config_path.exists():
+            data = self._try_read_yaml(repo_config_path)
+            if data is not None:
+                return data, repo_config_path
+
+        return {}, None
+
+    def _try_read_yaml(self, path: Path) -> Optional[Dict[str, Any]]:
+        """Attempt to load YAML content from the provided path."""
+
+        try:
+            with open(path, "r", encoding="utf-8") as handle:
+                loaded = yaml.safe_load(handle)
+            if isinstance(loaded, dict):
+                return loaded
+        except FileNotFoundError:
+            return None
+        except Exception as exc:
+            logger.warning(f"Could not load configuration from {path}: {exc}")
+        return None
+
+    def _try_read_json(self, path: Path) -> Optional[Dict[str, Any]]:
+        """Attempt to load JSON content from the provided path."""
+
+        try:
+            with open(path, "r", encoding="utf-8") as handle:
+                loaded = json.load(handle)
+            if isinstance(loaded, dict):
+                return loaded
+        except FileNotFoundError:
+            return None
+        except Exception as exc:
+            logger.warning(f"Could not load JSON metadata from {path}: {exc}")
+        return None

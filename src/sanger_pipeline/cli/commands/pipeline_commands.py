@@ -5,8 +5,10 @@ This module contains commands related to the main pipeline execution
 and core processing functionality.
 """
 
-import click
 from pathlib import Path
+
+import click
+from click.core import ParameterSource
 
 from ...core.pipeline import SangerPipeline
 from ...core.enhanced_ab1_converter_fixed import EnhancedAB1Converter as AB1Converter
@@ -37,13 +39,13 @@ def pipeline():
     "--config", "-c", type=click.Path(exists=True), help="Configuration file (YAML)"
 )
 @click.option(
-    "--min-quality", "-q", default=20, help="Minimum Phred quality score (default: 20)"
+    "--min-quality", "-q", type=int, help="Minimum Phred quality score"
 )
 @click.option(
     "--min-sequence-length",
     "-l",
-    default=30,
-    help="Minimum sequence length after filtering (default: 30)",
+    type=int,
+    help="Minimum sequence length after filtering",
 )
 @click.option(
     "--alignment-tool", default="mafft", help="Alignment tool (default: mafft)"
@@ -53,7 +55,9 @@ def pipeline():
     default="--auto",
     help="Alignment parameters (default: --auto)",
 )
+@click.pass_context
 def run_pipeline(
+    ctx,
     input_dir,
     output_dir,
     config,
@@ -66,12 +70,24 @@ def run_pipeline(
     click.echo(f"Running Sanger pipeline: {input_dir} -> {output_dir}")
 
     try:
+        source_min_quality = ctx.get_parameter_source("min_quality")
+        source_min_length = ctx.get_parameter_source("min_sequence_length")
+
+        min_quality_override = (
+            min_quality if source_min_quality == ParameterSource.COMMANDLINE else None
+        )
+        min_length_override = (
+            min_sequence_length
+            if source_min_length == ParameterSource.COMMANDLINE
+            else None
+        )
+
         pipeline = SangerPipeline(
             input_dir=Path(input_dir),
             output_dir=Path(output_dir),
             config_file=Path(config) if config else None,
-            min_quality=min_quality,
-            min_sequence_length=min_sequence_length,
+            min_quality=min_quality_override,
+            min_sequence_length=min_length_override,
             alignment_tool=alignment_tool,
             alignment_params=alignment_params,
         )
@@ -117,8 +133,10 @@ def convert_ab1(
             converter.generate_quality_plot(result, plot_path)
             click.echo(f"Generated quality plot: {plot_path}")
 
+        seq_obj = getattr(result, "seq", None)
+        sequence_length = len(seq_obj) if seq_obj is not None else 0
         click.echo(
-            f"Conversion completed successfully. Sequence length: {len(result.seq)}"
+            f"Conversion completed successfully. Sequence length: {sequence_length}"
         )
 
     except Exception as e:

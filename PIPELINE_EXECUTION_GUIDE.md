@@ -1,11 +1,11 @@
-🧬 Complete Sanger aDNA Pipeline Execution Guide
-================================================
+# 🧬 Complete Sanger aDNA Pipeline Execution Guide
 
 This guide shows you how to run the complete Sanger ancient DNA damage analysis pipeline from start to finish.
 
 ## 📋 Prerequisites
 
 1. **Environment Setup:**
+
    ```bash
    cd /Users/allyssonallan/sanger_adna_damage
    # Ensure Python environment is activated
@@ -30,6 +30,7 @@ sanger-pipeline run \
 ```
 
 **What this does:**
+
 - Converts all AB1 files to FASTA format
 - Applies quality filtering (Q30)
 - Builds consensus sequences for each HVS region
@@ -140,6 +141,7 @@ output_q30/
 ## 🎯 Recommended HSD Converter Choice
 
 **Use BWA-MEM method for all samples:**
+
 - Uses proper BWA-MEM alignment mapping for accurate variant calling
 - Handles complex indels and degraded sequences common in aDNA
 - Conservative, high-confidence variant identification
@@ -181,25 +183,29 @@ sanger-pipeline analyze-damage \
 
 ## 🚨 Troubleshooting
 
-### Common Issues:
+### Common Issues
 
 1. **Missing dependencies:**
+
    ```bash
    pip install -r requirements.txt
    ```
 
 2. **BWA not found:**
+
    ```bash
    # BWA is available ✅
    which bwa
    ```
 
 3. **Permission errors:**
+
    ```bash
    chmod +x scripts/run_pipeline.py
    ```
 
 4. **Python path issues:**
+
    ```bash
    export PYTHONPATH="${PYTHONPATH}:$(pwd)/src"
    ```

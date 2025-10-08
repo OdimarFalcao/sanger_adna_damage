@@ -2,161 +2,99 @@
 Quick Start Guide
 ================
 
-This guidStep 3: Run the Pipeline
-------------------------
-
-**Standard Pipeline:**
-
-.. code-block:: bash
-
-   # Run the complete pipeline
-   python scripts/run_pipeline.py run-pipeline 
-       --input-dir ./input 
-       --output-dir ./output_q30 
-       --quality 30 
-       --verbose
-
-**Enhanced Quality Control Pipeline (Recommended for aDNA):**
-
-.. code-block:: bash
-
-   # Step 1: Run standard pipeline
-   python scripts/run_pipeline.py run-pipeline 
-       --input-dir ./input 
-       --output-dir ./output_q30 
-       --quality 30 
-       --verbose
-
-   # Step 2: Apply enhanced quality control
-   python enhanced_hsd_converter.py
-
-   # Results will include:
-   # - output_q30_final_cleaned.fasta: Cleaned sequences
-   # - output_q30_final_high_quality.hsd: High-quality HSD file
-   # - Diversity analysis report
-
-Step 4: Generate Reports
-------------------------
-
-.. code-block:: bash
-
-   # Generate comprehensive HTML report
-   python generate_report.py ./output_q30
-
-🆕 Enhanced Quality Control Features
-===================================
-
-The enhanced pipeline provides advanced quality control specifically designed for ancient DNA:
-
-What It Does
------------
-
-* **Artifact Removal**: Eliminates common aDNA sequencing artifacts
-* **Quality Filtering**: Applies 70% quality threshold by default
-* **Diversity Analysis**: Comprehensive genetic diversity assessment
-* **Sample Prioritization**: Identifies highest-quality samples automatically
-
-When to Use
-----------
-
-Use the enhanced pipeline when:
-
-* Working with ancient DNA samples
-* Need optimal HSD files for haplogroup analysis
-* Want comprehensive quality assessment
-* Require sample prioritization for downstream analysis
-
-Quality Metrics
---------------
-
-The enhanced pipeline provides detailed metrics:
-
-* **Variant Statistics**: Range and distribution of variants per sample
-* **Sample Similarity**: Genetic similarity analysis between samples  
-* **Quality Flags**: Automatic detection of potential quality issues
-* **Retention Rates**: Percentage of samples passing quality filtersl get you up and running with the Sanger DNA Damage Analysis Pipeline in just a few minutes.
+This guide gets you from raw AB1 chromatograms to an interactive QC report in a few minutes.
 
 .. warning::
-   **Important: Tool Purpose & Scope**
-   
-   This pipeline is designed for **preliminary screening and haplogroup prioritization**, not for definitive ancient DNA authentication. Use this tool to:
-   
-   * Prioritize promising samples for NGS analysis
-   * Assess sequence quality and damage indicators  
-   * Guide resource allocation decisions
-   
-   **Definitive aDNA authentication requires NGS-based methods with proper controls and contamination assessment.**
+   **Scope Reminder**
 
-🚀 5-Minute Quick Start
-=======================
+   The pipeline prioritises haplogroup screening and damage inspection. Definitive ancient-DNA authentication still requires NGS-based workflows with full contamination controls.
 
 Prerequisites
 -------------
 
-* Python 3.8+ installed
-* MAFFT installed (see :doc:`installation` for details)
-* AB1 sequencing files ready to analyze
+* Python 3.8 or newer
+* MAFFT available on ``$PATH`` (see :doc:`installation`)
+* Your AB1 files collected in an ``input/`` directory
 
-Step 1: Installation
---------------------
+Step 1 – install the project
+----------------------------
 
 .. code-block:: bash
 
-   # Clone and install
-   git clone https://github.com/allyssonallan/sanger_adna_damage.git
+   git clone "https://github.com/allyssonallan/sanger_adna_damage.git"
    cd sanger_adna_damage
-   
-   # Set up environment
    python3 -m venv venv
-   source venv/bin/activate  # On Windows: venv\\Scripts\\activate
-   
-   # Install dependencies
+   source venv/bin/activate  # Windows: venv\Scripts\activate
    pip install -r requirements.txt
    pip install -e .
 
-Step 2: Prepare Your Data
--------------------------
+Step 2 – (optional) organise working folders
+--------------------------------------------
 
 .. code-block:: bash
 
-   # Create project directory
-   mkdir my_analysis
-   cd my_analysis
-   
-   # Create input directory and add your AB1 files
-   mkdir input
-   # Copy your .ab1 files to the input/ directory
+   mkdir -p input
+   cp /path/to/*.ab1 input/
 
-Step 3: Run the Pipeline
+Step 3 – run the pipeline
+-------------------------
+
+The CLI command is named ``run``. Use unique output folders for each quality threshold.
+
+.. code-block:: bash
+
+   # Example Q30 run
+   python -m src.sanger_pipeline.cli.main run \
+       --input-dir input \
+       --output-dir output_q30 \
+       --min-quality 30 \
+       --config config/default_config.yaml
+
+Additional quality thresholds
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: bash
+
+   # Q10
+   python -m src.sanger_pipeline.cli.main run \
+       --input-dir input \
+       --output-dir output_q10 \
+       --min-quality 10 \
+       --config config/default_config.yaml
+
+   # Q20
+   python -m src.sanger_pipeline.cli.main run \
+       --input-dir input \
+       --output-dir output_q20 \
+       --min-quality 20 \
+       --config config/default_config.yaml
+
+Step 4 – generate the QC report
+--------------------------------
+
+.. code-block:: bash
+
+   python -m src.sanger_pipeline.cli.main generate-report \
+       --output-dir output_q20  # swap for output_q10/output_q30 as needed
+       --open-browser
+
+The report lives in ``<output>/reports/``. Open the HTML file in any modern browser.
+
+Optional helper commands
 ------------------------
 
 .. code-block:: bash
 
-   # Run complete analysis
-   python -m src.sanger_pipeline.cli.main run-pipeline \\
-       --input-dir ./input \\
-       --output-dir ./output \\
-       --config ../config/default_config.yaml
+   # Inspect the current state of your input folder
+   python -m src.sanger_pipeline.cli.main status --input-dir input
 
-Step 4: View Results
--------------------
+   # Convert a single AB1 file to FASTA
+   python -m src.sanger_pipeline.cli.main convert-ab1 sample.ab1 sample.fasta
 
-.. code-block:: bash
+Directory layout reference
+--------------------------
 
-   # Generate interactive QC report
-   python -m src.sanger_pipeline.cli.main generate-report \\
-       --output-dir ./output \\
-       --open-browser
-
-That's it! Your browser will open with a beautiful interactive report showing all your results.
-
-📊 Understanding Your Results
-============================
-
-Output Directory Structure
----------------------------
-
-After running the pipeline, your output directory will contain:
+Typical output after a run:
 
 .. code-block:: text
 
@@ -234,49 +172,36 @@ Sample Details Tab
 Scenario 1: Basic Analysis
 --------------------------
 
-You have AB1 files and want a standard analysis:
-
 .. code-block:: bash
 
-   # Simple run with default settings
-   python -m src.sanger_pipeline.cli.main run-pipeline \\
-       --input-dir ./my_ab1_files \\
-       --output-dir ./results
+   python -m src.sanger_pipeline.cli.main run \
+      --input-dir ./my_ab1_files \
+      --output-dir ./results
 
 Scenario 2: Custom Quality Threshold
 ------------------------------------
 
-You want stricter quality filtering:
-
 .. code-block:: bash
 
-   # Copy and edit config
-   cp ../config/default_config.yaml my_config.yaml
-   
-   # Edit quality_threshold in my_config.yaml (e.g., change to 25)
-   
-   # Run with custom config
-   python -m src.sanger_pipeline.cli.main run-pipeline \\
-       --input-dir ./my_ab1_files \\
-       --output-dir ./results \\
-       --config ./my_config.yaml
+   cp config/default_config.yaml my_config.yaml
+   # edit my_config.yaml as needed
+   python -m src.sanger_pipeline.cli.main run \
+      --input-dir ./my_ab1_files \
+      --output-dir ./results \
+      --config ./my_config.yaml
 
 Scenario 3: Ancient DNA Assessment
 ----------------------------------
 
-You specifically want to assess ancient DNA damage:
-
 .. code-block:: bash
 
-   # Run pipeline with focus on damage analysis
-   python -m src.sanger_pipeline.cli.main run-pipeline \\
-       --input-dir ./ancient_samples \\
-       --output-dir ./ancient_results
-   
-   # Generate detailed damage report
-   python -m src.sanger_pipeline.cli.main analyze-damage \\
-       --input-dir ./ancient_results/final \\
-       --output-dir ./ancient_results/damage_analysis
+   python -m src.sanger_pipeline.cli.main run \
+      --input-dir ./ancient_samples \
+      --output-dir ./ancient_results
+
+   python -m src.sanger_pipeline.cli.main analyze-damage \
+      --input-dir ./ancient_results/final \
+      --output-dir ./ancient_results/damage_analysis
 
 🛠️ Command Line Interface
 =========================

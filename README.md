@@ -1,23 +1,27 @@
 # 🧬 Sanger aDNA Damage Pipeline
 
 <!-- Project Status Badges -->
+
 [![CI](https://github.com/allyssonallan/sanger_adna_damage/workflows/CI/badge.svg)](https://github.com/allyssonallan/sanger_adna_damage/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/allyssonallan/sanger_adna_damage/branch/main/graph/badge.svg)](https://codecov.io/gh/allyssonallan/sanger_adna_damage)
 [![Quality Gate Status](https://img.shields.io/badge/quality-passing-brightgreen.svg)](https://github.com/allyssonallan/sanger_adna_damage/actions)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 <!-- Language and Framework Badges -->
+
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Platform](https://img.shields.io/badge/platform-linux%20%7C%20macOS-lightgrey.svg)](#-platform-compatibility)
 
 <!-- Project Health Badges -->
+
 [![Maintenance](https://img.shields.io/badge/maintained-yes-green.svg)](https://github.com/allyssonallan/sanger_adna_damage/graphs/commit-activity)
 [![GitHub issues](https://img.shields.io/github/issues/allyssonallan/sanger_adna_damage.svg)](https://github.com/allyssonallan/sanger_adna_damage/issues)
 [![GitHub last commit](https://img.shields.io/github/last-commit/allyssonallan/sanger_adna_damage.svg)](https://github.com/allyssonallan/sanger_adna_damage/commits/main)
 [![GitHub release](https://img.shields.io/github/release/allyssonallan/sanger_adna_damage.svg)](https://github.com/allyssonallan/sanger_adna_damage/releases)
 
 <!-- Documentation and Development Badges -->
+
 [![Documentation](https://img.shields.io/badge/docs-sphinx-blue.svg)](docs/)
 [![BioPython](https://img.shields.io/badge/BioPython-1.78+-green.svg)](https://biopython.org/)
 [![pytest](https://img.shields.io/badge/pytest-tested-green.svg)](https://docs.pytest.org/)
@@ -26,8 +30,7 @@ A comprehensive pipeline for processing Sanger sequencing data from ancient DNA 
 
 ## 💻 Platform Compatibility
 
-> [!WARNING]
-> **Windows Compatibility Notice**
+> [!WARNING] > **Windows Compatibility Notice**
 >
 > This pipeline is **not recommended for Windows environments** due to:
 >
@@ -40,8 +43,7 @@ A comprehensive pipeline for processing Sanger sequencing data from ancient DNA 
 > - ✅ **Linux** (Ubuntu 20.04+, CentOS 7+)
 > - ✅ **macOS** (10.15+)
 > - 🟡 **WSL2** (Windows Subsystem for Linux) as an alternative for Windows users
-> [!IMPORTANT]
-> **🚨 IMPORTANT DISCLAIMER - Tool Purpose & Limitations**
+>   [!IMPORTANT] > **🚨 IMPORTANT DISCLAIMER - Tool Purpose & Limitations**
 >
 > This pipeline is **NOT** a tool for authenticating ancient DNA samples. It is designed for:
 >
@@ -62,7 +64,7 @@ The badges above provide quick information about project health and capabilities
 ### 🔧 **Development Status**
 
 - **CI (Continuous Integration)**: ✅ All tests passing on Linux and macOS
-- **Code Coverage**: 📊 Current test coverage percentage  
+- **Code Coverage**: 📊 Current test coverage percentage
 - **Code Style**: 🎨 Formatted with Black, linted with flake8
 - **Quality Gate**: ✅ All quality checks passing
 
@@ -89,83 +91,74 @@ The badges above provide quick information about project health and capabilities
 
 ## 🚀 Quick Start
 
-### Installation
+### 1. Install and configure
 
 ```bash
-# Clone and install
-git clone https://github.com/yourusername/sanger_adna_damage.git
+git clone "https://github.com/allyssonallan/sanger_adna_damage.git"
 cd sanger_adna_damage
+python3 -m venv venv
+source venv/bin/activate
 pip install -r requirements.txt
+pip install -e .
 ```
 
-### Basic Usage
+Place your `.ab1` files inside the `input/` directory (create it if needed). The default configuration lives at `config/default_config.yaml`.
+
+### 2. Run the pipeline
+
+Use the CLI entry point provided by the project. The command name is `run` (not `pipeline run`).
 
 ```bash
-# 1. Run the complete pipeline (processes AB1 files → consensus sequences)
-python scripts/run_pipeline.py run-pipeline \
-    --input-dir ./input \
-    --output-dir ./output_q30 \
-    --quality 30 \
-    --verbose
-
-# 2. Generate comprehensive HTML QC report with damage analysis
-python generate_report.py ./output_q30
-
-# 3. Enhanced Quality Control Pipeline (NEW!)
-# Apply advanced aDNA cleaning and quality filtering
-python enhanced_hsd_converter.py
-
-# 4. Test primer pair detection
-python tests/test_primer_pairs.py input/sample.ab1 --verbose
+python -m src.sanger_pipeline.cli.main run \
+    --input-dir input \
+    --output-dir output_q30 \
+    --min-quality 30 \
+    --config config/default_config.yaml
 ```
 
-**🆕 Enhanced Quality Control Workflow:**
+Need alternative quality thresholds? Re-run the command with different output folders so results stay separate:
 
 ```bash
-# Step 1: Run standard pipeline
-python scripts/run_pipeline.py run-pipeline \
-    --input-dir ./input \
-    --output-dir ./output_q30 \
-    --quality 30 \
-    --verbose
-
-# Step 2: Apply enhanced quality control (automatic aDNA cleaning + filtering)
-python enhanced_hsd_converter.py
-
-# Results:
-# - output_q30_final_cleaned.fasta: Cleaned consensus sequences
-# - output_q30_final_high_quality.hsd: High-quality HSD file
-# - Diversity analysis report with quality metrics
-```
-
-**Complete Standard Workflow:**
-
-```bash
-# Step 1: Process your AB1 files
-python scripts/run_pipeline.py run-pipeline \
-    --input-dir ./input \
-    --output-dir ./output_q30 \
+# Q10 analysis
+python -m src.sanger_pipeline.cli.main run \
+    --input-dir input \
+    --output-dir output_q10 \
+    --min-quality 10 \
     --config config/default_config.yaml
 
-# Step 2: Generate comprehensive HTML report
-python generate_report.py ./output_q30
+# Q20 analysis
+python -m src.sanger_pipeline.cli.main run \
+    --input-dir input \
+    --output-dir output_q20 \
+    --min-quality 20 \
+    --config config/default_config.yaml
 
-# Step 3: Create HSD file for HaploGrep
-python convert_hvs_consensus_to_hsd.py ./output_q30/consensus/ haplogroups.hsd
-
-# Your results:
-# - HTML Report: output_q30/reports/sanger_qc_report_YYYYMMDD_HHMMSS.html
-# - HSD File: haplogroups.hsd (ready for HaploGrep upload)
+# Q30 analysis
+python -m src.sanger_pipeline.cli.main run \
+    --input-dir input \
+    --output-dir output_q30 \
+    --min-quality 30 \
+    --config config/default_config.yaml
 ```
 
-**Single Sample Processing:**
+> 💡 If the destination directory already exists, clear it first or pick a new folder name to avoid mixing results.
+
+### 3. Generate the HTML QC report
 
 ```bash
-# Convert single AB1 file
-python -m src.sanger_pipeline.cli.main convert-ab1 \
-    sample.ab1 output.fasta \
-    --min-quality 30 \
-    --min-sequence-length 30
+python -m src.sanger_pipeline.cli.main generate-report --output-dir output_q20
+```
+
+Repeat for any other run (`output_q10`, `output_q30`, …). The report will be saved under `<output>/reports/` and can be opened directly in your browser.
+
+### 4. Optional helpers
+
+```bash
+# Convert a single AB1 file to FASTA
+python -m src.sanger_pipeline.cli.main convert-ab1 sample.ab1 sample.fasta
+
+# Inspect processing status
+python -m src.sanger_pipeline.cli.main status --input-dir input
 ```
 
 ## � Pipeline Workflow
@@ -180,15 +173,15 @@ graph TB
     D --> E[🧩 Region Merging]
     E --> F[🧬 Damage Analysis]
     F --> G[📊 QC Reports]
-    
+
     H[✨ Enhanced QC] --> I[🧪 aDNA Cleaning]
     I --> J[📝 HSD Conversion]
     J --> K[📈 Diversity Analysis]
-    
+
     E -.-> H
     G --> L[🎯 Final Results]
     K --> L
-    
+
     style A fill:#e1f5fe
     style L fill:#c8e6c9
     style H fill:#fff3e0
@@ -197,7 +190,7 @@ graph TB
 ### **Core Pipeline Steps:**
 
 1. **AB1 Conversion**: Converts proprietary AB1 files to FASTA format with quality filtering
-2. **Quality Control**: Filters sequences based on Phred scores and length requirements  
+2. **Quality Control**: Filters sequences based on Phred scores and length requirements
 3. **Consensus Building**: Builds consensus sequences for each HVS region using alignment algorithms
 4. **Region Merging**: Combines multiple HVS regions per sample when available
 5. **Damage Analysis**: Analyzes ancient DNA damage patterns with statistical validation
@@ -218,7 +211,7 @@ The pipeline supports both standard and **enhanced quality control workflows** o
 **Quick Links:**
 
 - [Installation Guide](https://allysson.dev.br/sanger_adna_damage/installation.html) - Detailed setup instructions
-- [Usage Tutorial](https://allysson.dev.br/sanger_adna_damage/quickstart.html) - Step-by-step workflow guide  
+- [Usage Tutorial](https://allysson.dev.br/sanger_adna_damage/quickstart.html) - Step-by-step workflow guide
 - [Configuration](https://allysson.dev.br/sanger_adna_damage/configuration.html) - Customization options
 - [API Reference](https://allysson.dev.br/sanger_adna_damage/api/) - Function and parameter documentation
 - [Examples](https://allysson.dev.br/sanger_adna_damage/tutorials/) - Real-world use cases
@@ -229,7 +222,7 @@ The pipeline supports both standard and **enhanced quality control workflows** o
 ### 🔬 **Core Pipeline**
 
 - **📊 AB1 Processing** - Convert Sanger files to FASTQ with quality scores
-- **🔗 Consensus Generation** - Merge forward/reverse reads intelligently  
+- **🔗 Consensus Generation** - Merge forward/reverse reads intelligently
 - **📈 Quality Control** - Comprehensive QC reports with visualizations
 - **🧪 Damage Analysis** - Bootstrap analysis of aDNA damage patterns
 - **🔧 Automated Pipeline** - Single-command execution

@@ -4,7 +4,9 @@ Refactored pipeline orchestrator using modular step handlers.
 This module provides a clean, modular pipeline structure using separate step handlers.
 """
 
+import json
 import logging
+from datetime import datetime
 from pathlib import Path
 from typing import Dict, Optional
 
@@ -12,6 +14,11 @@ from .enhanced_ab1_converter_fixed import EnhancedAB1Converter as AB1Converter
 from .consensus_builder import ConsensusBuilder
 from .adna_damage_analyzer import ADNADamageAnalyzer
 from ..utils.helpers import create_directories, load_config
+from ..utils.constants import (
+    DEFAULT_CONFIG_FILE,
+    DEFAULT_MIN_QUALITY,
+    DEFAULT_MIN_SEQUENCE_LENGTH,
+)
 
 from .pipeline_steps import (
     AB1ConversionStep,
@@ -37,8 +44,8 @@ class SangerPipelineRefactored:
         input_dir: Path,
         output_dir: Path,
         config_file: Optional[Path] = None,
-        min_quality: int = 20,
-        min_sequence_length: int = 30,
+        min_quality: Optional[int] = None,
+        min_sequence_length: Optional[int] = None,
         alignment: Optional[Dict] = None,
         alignment_tool: str = "mafft",
         alignment_params: str = "--auto",
@@ -58,8 +65,16 @@ class SangerPipelineRefactored:
         """
         self.input_dir = Path(input_dir)
         self.output_dir = Path(output_dir)
-        self.min_quality = min_quality
-        self.min_sequence_length = min_sequence_length
+        self.cli_min_quality = min_quality
+        self.cli_min_sequence_length = min_sequence_length
+        self.min_quality = (
+            min_quality if min_quality is not None else DEFAULT_MIN_QUALITY
+        )
+        self.min_sequence_length = (
+            min_sequence_length
+            if min_sequence_length is not None
+            else DEFAULT_MIN_SEQUENCE_LENGTH
+        )
 
         # Handle alignment configuration - prefer explicit parameters over dict
         if alignment:
@@ -68,14 +83,33 @@ class SangerPipelineRefactored:
             self.alignment = {"tool": alignment_tool, "parameters": alignment_params}
 
         # Load configuration
-        self.config = load_config(config_file) if config_file else {}
+        self.config_source = Path(config_file) if config_file else DEFAULT_CONFIG_FILE
+        self.config = load_config(self.config_source)
 
-        # Override with config values if available
+        # Override with config values if available, allowing CLI to take precedence
         quality_config = self.config.get("quality", {})
-        self.min_quality = quality_config.get("min_phred_score", min_quality)
-        self.min_sequence_length = quality_config.get(
-            "min_sequence_length", min_sequence_length
+        if self.cli_min_quality is not None:
+            self.min_quality = self.cli_min_quality
+        else:
+            self.min_quality = quality_config.get(
+                "min_phred_score", self.min_quality
+            )
+
+        if self.cli_min_sequence_length is not None:
+            self.min_sequence_length = self.cli_min_sequence_length
+        else:
+            self.min_sequence_length = quality_config.get(
+                "min_sequence_length", self.min_sequence_length
+            )
+
+        # Ensure configuration dict reflects the effective parameters
+        quality_config.update(
+            {
+                "min_phred_score": self.min_quality,
+                "min_sequence_length": self.min_sequence_length,
+            }
         )
+        self.config["quality"] = quality_config
 
         # Create output directories
         self.directories = create_directories(self.output_dir)
@@ -85,6 +119,9 @@ class SangerPipelineRefactored:
 
         # Initialize step handlers
         self._initialize_step_handlers()
+
+        # Persist run metadata for downstream reporting
+        self._write_run_metadata()
 
         logger.info(f"Initialized refactored pipeline: {input_dir} -> {output_dir}")
         logger.info(
@@ -198,6 +235,33 @@ class SangerPipelineRefactored:
     def _step_4_adna_damage_analysis(self, *args, **kwargs):
         """Backward compatibility method for old test."""
         return self.damage_analysis_step.execute(self.directories)
+
+    def _write_run_metadata(self) -> None:
+        """Persist metadata about the current pipeline run for reporting."""
+
+        metadata = {
+            "generated_at": datetime.now().isoformat(),
+            "input_directory": str(self.input_dir),
+            "output_directory": str(self.output_dir),
+            "config_source": str(self.config_source),
+            "quality": {
+                "min_phred_score": self.min_quality,
+                "min_sequence_length": self.min_sequence_length,
+            },
+            "alignment": self.alignment,
+            "cli_overrides": {
+                "min_quality": self.cli_min_quality,
+                "min_sequence_length": self.cli_min_sequence_length,
+            },
+            "config_parameters": self.config,
+        }
+
+        metadata_path = self.output_dir / "run_metadata.json"
+        try:
+            with open(metadata_path, "w", encoding="utf-8") as handle:
+                json.dump(metadata, handle, indent=2)
+        except Exception as exc:
+            logger.warning(f"Could not write run metadata to {metadata_path}: {exc}")
 
 
 # Maintain backward compatibility
