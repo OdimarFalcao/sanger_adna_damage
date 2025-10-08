@@ -2,402 +2,261 @@
 CLI Reference
 =============
 
-Complete reference for the Sanger DNA Damage Analysis Pipeline command-line interface.
-
-🖥️ Overview
-===========
-
-The pipeline provides a comprehensive command-line interface (CLI) for all operations. All commands are accessed through the main CLI module:
+Command-line interface for the Sanger DNA Damage Pipeline. All commands are exposed through the Click entry point:
 
 .. code-block:: bash
 
    python -m src.sanger_pipeline.cli.main [COMMAND] [OPTIONS]
 
-📋 Available Commands
-====================
+Use ``--help`` on any command for the authoritative list of flags.
 
 .. contents::
    :local:
-   :depth: 2
+   :depth: 1
 
-run-pipeline
-============
+run
+===
 
-Run the complete analysis pipeline from AB1 files to final results.
-
-**Syntax**:
+Run the full pipeline from AB1 files to processed outputs.
 
 .. code-block:: bash
 
-   python -m src.sanger_pipeline.cli.main run-pipeline [OPTIONS]
+   python -m src.sanger_pipeline.cli.main run \
+       --input-dir input \
+       --output-dir output_q30 \
+       --min-quality 30 \
+       --config config/default_config.yaml
 
-**Options**:
+**Options**
 
-.. list-table::
-   :widths: 25 20 55
-   :header-rows: 1
-
-   * - Option
-     - Type
-     - Description
-   * - ``--input-dir``
-     - PATH
-     - **Required**. Directory containing AB1 files
-   * - ``--output-dir`` 
-     - PATH
-     - **Required**. Directory for pipeline outputs
-   * - ``--config``
-     - PATH
-     - Configuration file path (default: config/default_config.yaml)
-   * - ``--quality-threshold``
-     - INTEGER
-     - Override quality threshold from config
-   * - ``--min-length``
-     - INTEGER
-     - Override minimum sequence length from config
-   * - ``--force``
-     - FLAG
-     - Overwrite existing output directory
-   * - ``--dry-run``
-     - FLAG
-     - Show what would be processed without running
-   * - ``--verbose``
-     - FLAG
-     - Enable verbose logging
-   * - ``--help``
-     - FLAG
-     - Show help message
-
-**Examples**:
-
-.. code-block:: bash
-
-   # Basic usage
-   python -m src.sanger_pipeline.cli.main run-pipeline \
-       --input-dir ./ab1_files \
-       --output-dir ./results
-
-   # With custom configuration
-   python -m src.sanger_pipeline.cli.main run-pipeline \
-       --input-dir ./ab1_files \
-       --output-dir ./results \
-       --config ./custom_config.yaml
-
-   # Override quality threshold
-   python -m src.sanger_pipeline.cli.main run-pipeline \
-       --input-dir ./ab1_files \
-       --output-dir ./results \
-       --quality-threshold 25
-
-   # Dry run to check what will be processed
-   python -m src.sanger_pipeline.cli.main run-pipeline \
-       --input-dir ./ab1_files \
-       --output-dir ./results \
-       --dry-run
-
-**Return Codes**:
-
-* ``0``: Success
-* ``1``: General error
-* ``2``: Invalid arguments
-* ``3``: Input files not found
-* ``4``: Configuration error
+=======================  ==================  =======================================
+Option                   Type               Description
+=======================  ==================  =======================================
+``--input-dir`` ``-i``   Path (required)    Directory containing AB1 chromatograms.
+``--output-dir`` ``-o``  Path (required)    Destination for pipeline results.
+``--config`` ``-c``      Path               Custom YAML configuration file.
+``--min-quality`` ``-q`` Integer            Override minimum Phred score.
+``--min-sequence-length`` ``-l`` Integer    Override minimum sequence length.
+``--alignment-tool``     Text               Alignment backend (default: ``mafft``).
+``--alignment-params``   Text               Arguments passed to the aligner.
+``--help``               Flag               Show command help.
+=======================  ==================  =======================================
 
 generate-report
 ===============
 
-Generate interactive HTML QC reports from pipeline outputs.
-
-**Syntax**:
+Render the interactive HTML QC report for a previous pipeline run.
 
 .. code-block:: bash
 
-   python -m src.sanger_pipeline.cli.main generate-report [OPTIONS]
-
-**Options**:
-
-.. list-table::
-   :widths: 25 20 55
-   :header-rows: 1
-
-   * - Option
-     - Type
-     - Description
-   * - ``--output-dir``
-     - PATH
-     - **Required**. Directory containing pipeline outputs
-   * - ``--report-dir``
-     - PATH
-     - Directory for report files (default: output-dir/reports)
-   * - ``--open-browser``
-     - FLAG
-     - Open report in browser after generation
-   * - ``--title``
-     - TEXT
-     - Custom report title
-   * - ``--template``
-     - PATH
-     - Custom HTML template file
-   * - ``--format``
-     - CHOICE
-     - Report format: html, json (default: html)
-   * - ``--help``
-     - FLAG
-     - Show help message
-
-**Examples**:
-
-.. code-block:: bash
-
-   # Generate report and open in browser
    python -m src.sanger_pipeline.cli.main generate-report \
-       --output-dir ./results \
+       --output-dir output_q30 \
        --open-browser
 
-   # Custom report location and title
-   python -m src.sanger_pipeline.cli.main generate-report \
-       --output-dir ./results \
-       --report-dir ./custom_reports \
-       --title "Ancient DNA Analysis Report"
+**Options**
 
-   # JSON format for programmatic access
-   python -m src.sanger_pipeline.cli.main generate-report \
-       --output-dir ./results \
-       --format json
-
-analyze-damage
-==============
-
-Perform ancient DNA damage analysis on sequences.
-
-**Syntax**:
-
-.. code-block:: bash
-
-   python -m src.sanger_pipeline.cli.main analyze-damage [OPTIONS]
-
-**Options**:
-
-.. list-table::
-   :widths: 25 20 55
-   :header-rows: 1
-
-   * - Option
-     - Type
-     - Description
-   * - ``--input-dir``
-     - PATH
-     - **Required**. Directory containing FASTA sequences
-   * - ``--output-dir``
-     - PATH
-     - **Required**. Directory for damage analysis results
-   * - ``--config``
-     - PATH
-     - Configuration file path
-   * - ``--threshold``
-     - FLOAT
-     - P-value threshold for significance (0.0-1.0)
-   * - ``--iterations``
-     - INTEGER
-     - Bootstrap iterations (1000-100000)
-   * - ``--reference``
-     - PATH
-     - Reference sequence file
-   * - ``--help``
-     - FLAG
-     - Show help message
-
-**Examples**:
-
-.. code-block:: bash
-
-   # Basic damage analysis
-   python -m src.sanger_pipeline.cli.main analyze-damage \
-       --input-dir ./results/final \
-       --output-dir ./damage_results
-
-   # With custom parameters
-   python -m src.sanger_pipeline.cli.main analyze-damage \
-       --input-dir ./results/final \
-       --output-dir ./damage_results \
-       --threshold 0.01 \
-       --iterations 50000
+=======================  ==================  =======================================
+Option                   Type               Description
+=======================  ==================  =======================================
+``--output-dir`` ``-o``  Path (required)    Pipeline output directory.
+``--open-browser``       Flag               Launch the report in the default browser.
+``--help``               Flag               Show command help.
+=======================  ==================  =======================================
 
 status
 ======
 
-Check pipeline status and output summary.
-
-**Syntax**:
+Summarise the current state of an input directory and its derived results.
 
 .. code-block:: bash
 
-   python -m src.sanger_pipeline.cli.main status [OPTIONS]
+   python -m src.sanger_pipeline.cli.main status --input-dir input
 
-**Options**:
+**Option**
 
-.. list-table::
-   :widths: 25 20 55
-   :header-rows: 1
+=======================  ==================  =======================================
+Option                   Type               Description
+=======================  ==================  =======================================
+``--input-dir`` ``-i``   Path (required)    Directory to inspect for AB1/outputs.
+``--help``               Flag               Show command help.
+=======================  ==================  =======================================
 
-   * - Option
-     - Type
-     - Description
-   * - ``--output-dir``
-     - PATH
-     - Pipeline output directory to check
-   * - ``--input-dir``
-     - PATH
-     - Original input directory
-   * - ``--config``
-     - PATH
-     - Configuration file used
-   * - ``--detailed``
-     - FLAG
-     - Show detailed per-file status
-   * - ``--json``
-     - FLAG
-     - Output status in JSON format
-   * - ``--help``
-     - FLAG
-     - Show help message
+convert-ab1
+===========
 
-**Examples**:
+Convert a single AB1 chromatogram to FASTA, optionally creating plots and filtered sequences.
 
 .. code-block:: bash
 
-   # Basic status check
-   python -m src.sanger_pipeline.cli.main status \
-       --output-dir ./results
+   python -m src.sanger_pipeline.cli.main convert-ab1 sample.ab1 sample.fasta \
+       --min-quality 25 --generate-plot
 
-   # Detailed status with original inputs
-   python -m src.sanger_pipeline.cli.main status \
-       --output-dir ./results \
-       --input-dir ./ab1_files \
-       --detailed
+**Options**
 
-   # JSON output for scripts
-   python -m src.sanger_pipeline.cli.main status \
-       --output-dir ./results \
-       --json
+==============================  ==================  =======================================
+Option                          Type               Description
+==============================  ==================  =======================================
+``ab1_file``                    Path (argument)    Input AB1 chromatogram.
+``output_fasta``                Path (argument)    Output FASTA file.
+``--min-quality`` ``-q``        Integer            Minimum Phred quality (default: 20).
+``--min-sequence-length`` ``-l`` Integer           Minimum length after filtering (default: 30).
+``--generate-plot``             Flag               Write a PNG quality plot next to output.
+``--help``                      Flag               Show command help.
+==============================  ==================  =======================================
 
-validate
-========
+convert-ab1-enhanced
+====================
 
-Validate configuration files and check system requirements.
-
-**Syntax**:
-
-.. code-block:: bash
-
-   python -m src.sanger_pipeline.cli.main validate [OPTIONS]
-
-**Options**:
-
-.. list-table::
-   :widths: 25 20 55
-   :header-rows: 1
-
-   * - Option
-     - Type
-     - Description
-   * - ``--config``
-     - PATH
-     - Configuration file to validate
-   * - ``--check-deps``
-     - FLAG
-     - Check external dependencies (MAFFT, etc.)
-   * - ``--check-input``
-     - PATH
-     - Validate input directory
-   * - ``--help``
-     - FLAG
-     - Show help message
-
-**Examples**:
+Enhanced conversion with primer trimming, ancient-DNA heuristics, and optional plotting.
 
 .. code-block:: bash
 
-   # Validate configuration
-   python -m src.sanger_pipeline.cli.main validate \
-       --config ./my_config.yaml
+   python -m src.sanger_pipeline.cli.main convert-ab1-enhanced sample.ab1 sample.fasta \
+       --primer-config config/primers.yaml --generate-plot
 
-   # Check all dependencies
-   python -m src.sanger_pipeline.cli.main validate \
-       --check-deps
+**Notable options**
 
-   # Validate input directory
-   python -m src.sanger_pipeline.cli.main validate \
-       --check-input ./ab1_files
+==============================  ==================  ==============================================
+Option                          Type               Description
+==============================  ==================  ==============================================
+``--primer-config``             Path               YAML primer definitions.
+``--primer-forward``            Text               Override forward primers (``region:sequence`` pairs).
+``--primer-reverse``            Text               Override reverse primers.
+``--disable-primer-removal``    Flag               Keep primers in the output sequence.
+``--adna-mode/--modern-mode``   Flag               Toggle relaxed matching for ancient DNA (default: on).
+``--show-primer-info``          Flag               Print detected primer details.
+==============================  ==================  ==============================================
 
-convert
-=======
-
-Convert AB1 files to FASTA format only.
-
-**Syntax**:
-
-.. code-block:: bash
-
-   python -m src.sanger_pipeline.cli.main convert [OPTIONS]
-
-**Options**:
-
-.. list-table::
-   :widths: 25 20 55
-   :header-rows: 1
-
-   * - Option
-     - Type
-     - Description
-   * - ``--input-dir``
-     - PATH
-     - **Required**. Directory containing AB1 files
-   * - ``--output-dir``
-     - PATH
-     - **Required**. Directory for FASTA outputs
-   * - ``--quality-filter``
-     - FLAG
-     - Apply quality filtering during conversion
-   * - ``--quality-threshold``
-     - INTEGER
-     - Quality threshold for filtering (default: 20)
-   * - ``--help``
-     - FLAG
-     - Show help message
-
-**Examples**:
-
-.. code-block:: bash
-
-   # Simple conversion
-   python -m src.sanger_pipeline.cli.main convert \
-       --input-dir ./ab1_files \
-       --output-dir ./fasta_files
-
-   # With quality filtering
-   python -m src.sanger_pipeline.cli.main convert \
-       --input-dir ./ab1_files \
-       --output-dir ./fasta_files \
-       --quality-filter \
-       --quality-threshold 25
-
-🔧 Global Options
+validate-primers
 ================
 
-These options work with all commands:
+Check primer configuration files for consistency.
 
-.. list-table::
-   :widths: 25 20 55
-   :header-rows: 1
+.. code-block:: bash
 
-   * - Option
-     - Type
-     - Description
-   * - ``--version``
-     - FLAG
-     - Show pipeline version
-   * - ``--help``
+   python -m src.sanger_pipeline.cli.main validate-primers --primer-config my_primers.yaml --show-details
+
+**Options**
+
+=======================  ==================  =======================================
+Option                   Type               Description
+=======================  ==================  =======================================
+``--primer-config``      Path               YAML file to validate (defaults to built-in if omitted).
+``--show-details``       Flag               Print loaded primers and matching parameters.
+``--help``               Flag               Show command help.
+=======================  ==================  =======================================
+
+generate-primer-config
+======================
+
+Write a starter primer configuration file.
+
+.. code-block:: bash
+
+   python -m src.sanger_pipeline.cli.main generate-primer-config primers.yaml --template-type comprehensive
+
+**Options**
+
+=======================  ==================  =======================================
+Option                   Type               Description
+=======================  ==================  =======================================
+``output_file``          Path (argument)    Destination file.
+``--template-type``      Choice             ``basic`` (default) or ``comprehensive`` sample set.
+``--help``               Flag               Show command help.
+=======================  ==================  =======================================
+
+convert-to-hsd
+==============
+
+Convert consensus FASTA files to the HaploGrep HSD format using BWA-MEM alignment.
+
+.. code-block:: bash
+
+   python -m src.sanger_pipeline.cli.main convert-to-hsd \
+       --consensus-dir output_q30/consensus \
+       --output haplogroups.hsd
+
+**Options**
+
+=======================  ==================  =======================================
+Option                   Type               Description
+=======================  ==================  =======================================
+``--consensus-dir`` ``-i`` Path (required)  Directory containing consensus FASTA files.
+``--output`` ``-o``        Path (required)  Output HSD file.
+``--reference`` ``-r``     Path             Reference FASTA (default: ``ref/rCRS.fasta``).
+``--help``                 Flag             Show command help.
+=======================  ==================  =======================================
+
+analyze-damage
+==============
+
+Assess damage patterns for a single FASTA sequence against a reference.
+
+.. code-block:: bash
+
+   python -m src.sanger_pipeline.cli.main analyze-damage \
+       --input-file output_q30/final/sample.fasta \
+       --reference ref/rCRS.fasta \
+       --output-dir damage_single
+
+**Options**
+
+=======================  ==================  =======================================
+Option                   Type               Description
+=======================  ==================  =======================================
+``--input-file`` ``-i``  Path (required)    FASTA file to analyse.
+``--reference`` ``-r``   Path (required)    Reference FASTA file.
+``--output-dir`` ``-o``  Path (required)    Directory for JSON/plot outputs.
+``--sample-name`` ``-s`` Text               Override sample label in outputs.
+``--help``               Flag               Show command help.
+=======================  ==================  =======================================
+
+damage-summary
+==============
+
+Summarise multiple damage-analysis JSON files.
+
+.. code-block:: bash
+
+   python -m src.sanger_pipeline.cli.main damage-summary --results-dir output_q30/damage_analysis
+
+**Option**
+
+=======================  ==================  =======================================
+Option                   Type               Description
+=======================  ==================  =======================================
+``--results-dir`` ``-d`` Path (required)    Folder containing ``*_damage_results.json`` files.
+``--help``               Flag               Show command help.
+=======================  ==================  =======================================
+
+hsd command group
+=================
+
+Utility group for additional HSD converters. Invoke subcommands as ``hsd <name>``.
+
+.. code-block:: bash
+
+   python -m src.sanger_pipeline.cli.main hsd enhanced --consensus-dir output_q30/consensus --output haplogroups.hsd
+
+Subcommands
+
+``enhanced``
+   Alignment-backed conversion (recommended). Accepts ``--consensus-dir``, ``--output``, ``--method`` (``aligned`` or ``direct``).
+
+``bwa``
+   Shortcut to the BWA-MEM converter with ``--consensus-dir`` and ``--output`` options.
+
+``pipeline``
+   Convert full pipeline outputs to HSD via ``scripts/convert_pipeline_to_hsd.py``. Requires ``--input-dir`` and ``--output``; accepts ``--reference``.
+
+Global options
+==============
+
+``-v`` / ``--verbose``
+   Enable debug logging before command execution.
+
+``--help``
+   Display command usage.
      - FLAG
      - Show help for command
    * - ``--verbose``
