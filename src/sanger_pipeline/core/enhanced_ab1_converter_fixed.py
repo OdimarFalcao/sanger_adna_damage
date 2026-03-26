@@ -10,6 +10,11 @@ from typing import Tuple, Optional, Dict, Any
 from Bio import SeqIO
 from Bio.SeqRecord import SeqRecord
 from Bio.Seq import Seq
+import matplotlib
+
+# Use a non-interactive backend so PNG generation works in headless or
+# minimally configured Windows environments without Tcl/Tk.
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 from ..utils.constants import DEFAULT_MIN_QUALITY, DEFAULT_MIN_SEQUENCE_LENGTH
@@ -55,66 +60,6 @@ class EnhancedAB1Converter:
             custom_primers_forward: Custom forward primers dict {region: sequence}
             custom_primers_reverse: Custom reverse primers dict {region: sequence}
             primer_config_file: Path to YAML primer configuration file
-        """
-        self.min_quality = min_quality
-        self.min_sequence_length = min_sequence_length
-        self.enable_primer_removal = enable_primer_removal
-        self.enable_quality_trimming = enable_quality_trimming
-        self.quality_window_size = quality_window_size
-        self.quality_threshold_fraction = quality_threshold_fraction
-        self.adna_damage_mode = adna_damage_mode
-        self.adaptive_quality_threshold = adaptive_quality_threshold
-        self.extremity_analysis_length = extremity_analysis_length
-
-        # Ancient DNA damage-specific parameters
-        if self.adna_damage_mode:
-            self.primer_similarity_threshold = 0.35  # Lower for degraded primers
-            self.iupac_tolerance = True  # Handle ambiguous bases
-            self.damage_position_bias = True  # Consider 5' and 3' damage patterns
-            self.conservative_trimming = True  # More aggressive quality trimming
-        else:
-            self.primer_similarity_threshold = 0.8  # Higher for modern DNA
-            self.iupac_tolerance = False
-            self.damage_position_bias = False
-            self.conservative_trimming = False
-
-        # Initialize primer configuration system
-        self.primer_config = PrimerConfig(primer_config_file)
-
-        # Add custom primers if provided
-        if custom_primers_forward or custom_primers_reverse:
-            self.primer_config.add_custom_primers(
-                custom_primers_forward, custom_primers_reverse
-            )
-
-        # Validate primer configuration
-        valid, issues = self.primer_config.validate_primers()
-        if not valid:
-            logger.warning("Primer validation issues found:")
-            for issue in issues:
-                logger.warning(f"  - {issue}")
-
-        # Get primers for backward compatibility
-        self.primers = self._setup_primer_pairs_from_config()
-
-        logger.info(
-            f"Initialized with {len(self.primers)} primer pairs from configuration"
-        )
-        """
-        Initialize enhanced AB1 converter.
-
-        Args:
-            min_quality: Minimum Phred quality score for base calling
-            min_sequence_length: Minimum sequence length after filtering
-            enable_primer_removal: Whether to remove primer sequences
-            enable_quality_trimming: Whether to trim low-quality ends
-            quality_window_size: Window size for quality trimming
-            quality_threshold_fraction: Fraction of bases in window that must meet quality threshold
-            adna_damage_mode: Enable ancient DNA damage-specific optimizations
-            adaptive_quality_threshold: Dynamically adjust quality thresholds based on sequence characteristics
-            extremity_analysis_length: Length of sequence extremities to analyze for N abundance
-            custom_primers_forward: Custom forward primers dict {region: sequence}
-            custom_primers_reverse: Custom reverse primers dict {region: sequence}
         """
         self.min_quality = min_quality
         self.min_sequence_length = min_sequence_length
@@ -635,7 +580,7 @@ class EnhancedAB1Converter:
         ab1_file: Path,
         fasta_output: Path,
         processed_output: Path,
-        plot_output: Path,
+        plot_output: Optional[Path] = None,
     ) -> Tuple[SeqRecord, Optional[SeqRecord], Dict]:
         """
         Complete enhanced processing of an AB1 file with damage analysis.
@@ -644,7 +589,7 @@ class EnhancedAB1Converter:
             ab1_file: Path to input AB1 file
             fasta_output: Path to raw FASTA output
             processed_output: Path to processed FASTA output
-            plot_output: Path to quality plot output
+            plot_output: Optional path to quality plot output
 
         Returns:
             Tuple of (raw_record, processed_record or None if too short, processing_stats)
@@ -770,7 +715,8 @@ class EnhancedAB1Converter:
             logger.warning(
                 f"Sequence {raw_record.id} too short after processing: {valid_bases} valid bases (minimum: {self.min_sequence_length})"
             )
-            self.generate_quality_plot(raw_record, plot_output)
+            if plot_output is not None:
+                self.generate_quality_plot(raw_record, plot_output)
             return raw_record, None, processing_stats
 
         # Create processed record
@@ -786,7 +732,8 @@ class EnhancedAB1Converter:
         )
 
         # Generate quality plot
-        self.generate_quality_plot(raw_record, plot_output)
+        if plot_output is not None:
+            self.generate_quality_plot(raw_record, plot_output)
 
         logger.info(f"Enhanced processing completed: {ab1_file}")
         return raw_record, processed_record, processing_stats

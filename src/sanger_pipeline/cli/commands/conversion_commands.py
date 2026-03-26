@@ -37,20 +37,24 @@ def convert_ab1(
         converter = AB1Converter(
             min_quality=min_quality, min_sequence_length=min_sequence_length
         )
+        # Normalize CLI strings to Path objects once so the downstream calls all
+        # operate on the same resolved input/output names.
+        ab1_path = Path(ab1_file)
         output_path = Path(output_fasta)
+        plot_path = output_path.with_suffix(".png") if generate_plot else None
 
-        # Convert to FASTA
-        record = converter.convert_to_fasta(Path(ab1_file), output_path)
-
-        # Generate filtered version if quality filtering is enabled
         if min_quality > 0:
-            processed_path = output_path.with_suffix("").with_suffix("_processed.fasta")
-            plot_path = output_path.with_suffix(".png") if generate_plot else None
+            # Keep the original FASTA and the processed FASTA side by side so the
+            # conversion tests can compare raw output against filtered output.
+            processed_path = output_path.with_name(
+                f"{output_path.stem}_processed{output_path.suffix}"
+            )
 
-            # Use enhanced processing for quality filtering
-            original_record, processed_record, stats = (
+            # The enhanced path writes the raw FASTA, the processed FASTA, and
+            # optional plot in one call while also returning processing stats.
+            _, processed_record, stats = (
                 converter.process_ab1_file_enhanced(
-                    Path(ab1_file), output_path, processed_path, plot_path
+                    ab1_path, output_path, processed_path, plot_path
                 )
             )
 
@@ -64,11 +68,13 @@ def convert_ab1(
                     f"Sequence excluded due to insufficient length (minimum: {min_sequence_length} valid bases)"
                 )
 
-        # Generate plot if requested and not already generated
-        if generate_plot and min_quality == 0:
-            plot_path = output_path.with_suffix(".png")
-            converter.generate_quality_plot(record, plot_path)
-            click.echo(f"Generated quality plot: {plot_path}")
+        else:
+            # When quality filtering is disabled, keep the command behavior simple:
+            # convert the AB1 directly and only generate a plot if requested.
+            record = converter.convert_to_fasta(ab1_path, output_path)
+            if generate_plot:
+                converter.generate_quality_plot(record, plot_path)
+                click.echo(f"Generated quality plot: {plot_path}")
 
         click.echo("Conversion completed successfully")
 
@@ -167,10 +173,10 @@ def convert_ab1_enhanced(
         ab1_path = Path(ab1_file)
         output_path = Path(output_fasta)
         processed_output = output_path.with_suffix(".processed.fasta")
-        plot_output = output_path.with_suffix(".png")
+        plot_output = output_path.with_suffix(".png") if generate_plot else None
 
         # Convert with enhanced features
-        original_record, processed_record, stats = converter.process_ab1_file_enhanced(
+        _, processed_record, stats = converter.process_ab1_file_enhanced(
             ab1_path, output_path, processed_output, plot_output
         )
 
@@ -195,7 +201,7 @@ def convert_ab1_enhanced(
 
         click.echo(f"  Quality trimmed: {stats.get('quality_trimmed', (0, 0))}")
 
-        if generate_plot:
+        if plot_output is not None:
             click.echo(f"Generated quality plot: {plot_output}")
 
         click.echo("\n✅ Enhanced conversion completed successfully")

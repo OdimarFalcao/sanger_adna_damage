@@ -115,6 +115,16 @@ docs/_build/
 .DS_Store
 Thumbs.db
 Desktop.ini
+__MACOSX/
+
+# Local workspace notes and agent metadata
+AGENTS.md
+historico_refatoracoes.md
+refatoracao.md
+
+# Local temporary test artifacts
+.pytest_temp/
+teste_*.png
 
 # Temporary files
 *.tmp

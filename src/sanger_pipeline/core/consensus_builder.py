@@ -3,6 +3,8 @@ Consensus sequence building from alignments.
 """
 
 import logging
+import os
+import shutil
 import subprocess
 from pathlib import Path
 from typing import List, Dict
@@ -31,6 +33,48 @@ class ConsensusBuilder:
         """
         self.alignment_tool = alignment_tool
         self.alignment_params = alignment_params
+
+    def _resolve_alignment_executable(self) -> str:
+        """
+        Resolve the configured alignment tool to an executable path.
+
+        Returns:
+            Resolved executable path or command name.
+
+        Raises:
+            FileNotFoundError: If the alignment tool cannot be resolved.
+        """
+        tool_path = Path(self.alignment_tool)
+        if tool_path.exists():
+            return str(tool_path)
+
+        resolved = shutil.which(self.alignment_tool)
+        if resolved:
+            return resolved
+
+        raise FileNotFoundError(
+            f"Alignment tool '{self.alignment_tool}' was not found in PATH"
+        )
+
+    def _build_alignment_command(self, temp_file: Path) -> List[str]:
+        """
+        Build a platform-appropriate alignment command.
+
+        Args:
+            temp_file: Temporary FASTA file containing sequences to align
+
+        Returns:
+            Command list for subprocess.run
+        """
+        executable = self._resolve_alignment_executable()
+        params = self.alignment_params.split()
+
+        # Windows MAFFT is distributed as a batch wrapper; invoking it through
+        # cmd.exe is more reliable than relying on CreateProcess to resolve .bat.
+        if os.name == "nt" and Path(executable).suffix.lower() in {".bat", ".cmd"}:
+            return ["cmd", "/c", executable, *params, str(temp_file)]
+
+        return [executable, *params, str(temp_file)]
 
     def reverse_complement_sequence(self, input_file: Path, output_file: Path) -> None:
         """
@@ -78,9 +122,8 @@ class ConsensusBuilder:
             output_file.parent.mkdir(parents=True, exist_ok=True)
 
             # Run alignment
-            cmd = (
-                [self.alignment_tool] + self.alignment_params.split() + [str(temp_file)]
-            )
+            cmd = self._build_alignment_command(temp_file)
+            logger.info(f"Running alignment command: {' '.join(cmd[:3])} ...")
 
             with open(output_file, "w") as out_handle:
                 subprocess.run(
@@ -96,7 +139,13 @@ class ConsensusBuilder:
         except subprocess.CalledProcessError as e:
             logger.error(f"Alignment failed: {e.stderr}")
             raise
+        except FileNotFoundError as e:
+            logger.error(f"Alignment tool unavailable: {e}")
+            raise
         finally:
+            # Avoid leaving misleading zero-byte outputs when alignment fails.
+            if output_file.exists() and output_file.stat().st_size == 0:
+                output_file.unlink()
             # Clean up temporary file
             if temp_file.exists():
                 temp_file.unlink()
