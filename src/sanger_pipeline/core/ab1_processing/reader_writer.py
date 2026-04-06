@@ -37,4 +37,3 @@ class AB1IO:
         """Write a SeqRecord as FASTA."""
         output_file.parent.mkdir(parents=True, exist_ok=True)
         SeqIO.write(record, output_file, "fasta")
-

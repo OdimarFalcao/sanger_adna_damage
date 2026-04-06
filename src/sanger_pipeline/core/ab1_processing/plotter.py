@@ -49,4 +49,3 @@ class QualityPlotter:
         plt.savefig(request.output_file, dpi=300, bbox_inches="tight")
         plt.close()
         logger.info(f"Generated quality plot: {request.output_file}")
-

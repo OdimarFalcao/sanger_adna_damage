@@ -8,7 +8,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-
 UNICODE_FALLBACKS = {
     "🧪": "[TEST]",
     "🚀": "[SMOKE]",

@@ -21,4 +21,3 @@ class QualityPlotRequest:
 
     output_file: Path
     figure_size: Tuple[int, int] = (12, 4)
-

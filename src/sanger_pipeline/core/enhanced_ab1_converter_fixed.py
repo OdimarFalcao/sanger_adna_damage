@@ -11,7 +11,12 @@ from Bio.SeqRecord import SeqRecord
 from Bio.Seq import Seq
 
 from ..utils.constants import DEFAULT_MIN_QUALITY, DEFAULT_MIN_SEQUENCE_LENGTH
-from .ab1_processing import AB1ConversionRequest, AB1IO, QualityPlotRequest, QualityPlotter
+from .ab1_processing import (
+    AB1ConversionRequest,
+    AB1IO,
+    QualityPlotRequest,
+    QualityPlotter,
+)
 from .primer_config import PrimerConfig
 
 logger = logging.getLogger(__name__)
